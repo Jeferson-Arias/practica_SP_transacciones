@@ -1,58 +1,112 @@
-CREATE OR ALTER PROCEDURE sp_InsertarOrdenServicio
-    @idCliente INT,
-    @idRestaurante INT,
-    @idMetodoPago INT,
-    @direccionOrdenServicio VARCHAR(250),
-    @descricionOrdenServicio VARCHAR(500),
-    @sumaSubtotal DECIMAL(18,2),
-    @idDescuentoRol INT,
-    @totalCobrado DECIMAL(18,2),
-    @idEstadoServicio INT = 1, -- Estado inicial, por ejemplo "pendiente"
-    @idOrdenServicio INT OUTPUT,
-    @mensaje NVARCHAR(250) OUTPUT
+IF OBJECT_ID('sp_InsertarPrecios') IS NOT NULL
+BEGIN
+    DROP PROCEDURE sp_InsertarPrecios
+END
+GO
+
+CREATE PROCEDURE sp_InsertarPrecios
+    @TipoMenu VARCHAR(10), -- 'Comida' o 'Bebida'
+    @IdMenu INT,          -- ID del menú a actualizar (idMenuComida o idMenuBebida)
+    @NuevoPrecio DECIMAL(18,2)
 AS
 BEGIN
     SET NOCOUNT ON;
-
+    
+    DECLARE @FechaActual DATE = GETDATE();
+    DECLARE @MensajeError NVARCHAR(500);
+    
     BEGIN TRY
-        INSERT INTO ordenServicio (
-            idCliente,
-            idRestaurante,
-            idEstadoServicio,
-            fechaOrdenServicio,
-            horaOrdenServicio,
-            horaEntregaOrdenServicio,
-            direccionOrdenServicio,
-            descricionOrdenServicio,
-            estadoPago,
-            idMetodoPago,
-            sumaSubtotal,
-            idDescuentoRol,
-            totalCobrado
-        )
-        VALUES (
-            @idCliente,
-            @idRestaurante,
-            @idEstadoServicio,
-            CAST(GETDATE() AS DATE),
-            CAST(GETDATE() AS TIME(7)),
-            DATEADD(MINUTE, 30, CAST(GETDATE() AS TIME(0))),
-            @direccionOrdenServicio,
-            @descricionOrdenServicio,
-            0, -- No pagado aún
-            @idMetodoPago,
-            @sumaSubtotal,
-            @idDescuentoRol,
-            @totalCobrado
-        );
-
-        -- Recuperar el último ID insertado
-        SET @idOrdenServicio = SCOPE_IDENTITY();
-        SET @mensaje = 'Orden de servicio registrada exitosamente.';
-
+        BEGIN TRANSACTION;
+        
+        -- Validamos que el tipo de menú sea válido
+        IF @TipoMenu NOT IN ('Comida', 'Bebida')
+        BEGIN
+            SET @MensajeError = 'El tipo de menú debe ser "Comida" o "Bebida"';
+            THROW 50000, @MensajeError, 1;
+        END
+        
+        -- Validamos que el precio sea mayor que cero
+        IF @NuevoPrecio <= 0
+        BEGIN
+            SET @MensajeError = 'El precio debe ser mayor que cero';
+            THROW 50001, @MensajeError, 1;
+        END
+        
+        -- Actualizamos precio de comida
+        IF @TipoMenu = 'Comida'
+        BEGIN
+            -- Verificamos que el menú de comida existe
+            IF NOT EXISTS (SELECT 1 FROM menuComida WHERE idMenuComida = @IdMenu)
+            BEGIN
+                SET @MensajeError = 'El ID de menú de comida no existe';
+                THROW 50002, @MensajeError, 1;
+            END
+            
+            -- Insertamos nuevo registro de precio
+            INSERT INTO precioComida (idMenuComida, fechaActualizacionPrecioComida, precioPrecioComida)
+            VALUES (@IdMenu, @FechaActual, @NuevoPrecio);
+            
+            SELECT 'Precio de comida actualizado correctamente. ID: ' + CAST(SCOPE_IDENTITY() AS VARCHAR) AS Resultado;
+        END
+        -- Actualizamos precio de bebida
+        ELSE IF @TipoMenu = 'Bebida'
+        BEGIN
+            -- Verificamos que el menú de bebida existe
+            IF NOT EXISTS (SELECT 1 FROM menuBebida WHERE idMenuBebida = @IdMenu)
+            BEGIN
+                SET @MensajeError = 'El ID de menú de bebida no existe';
+                THROW 50003, @MensajeError, 1;
+            END
+            
+            -- Insertamos nuevo registro de precio
+            INSERT INTO precioBebida (idMenuBebida, fechaActualizacionPrecioBebida, precioPrecioBebida)
+            VALUES (@IdMenu, @FechaActual, @NuevoPrecio);
+            
+            SELECT 'Precio de bebida actualizado correctamente. ID: ' + CAST(SCOPE_IDENTITY() AS VARCHAR) AS Resultado;
+        END
+        
+        COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
-        SET @idOrdenServicio = 0;
-        SET @mensaje = 'Error al registrar la orden de servicio: ' + ERROR_MESSAGE();
-    END CATCH
-END
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            
+        -- Mostrar información del error
+        SELECT 
+            ERROR_NUMBER() AS ErrorNumero,
+            ERROR_SEVERITY() AS ErrorSeveridad,
+            ERROR_STATE() AS ErrorEstado,
+            ERROR_PROCEDURE() AS ErrorProcedimiento,
+            ERROR_LINE() AS ErrorLinea,
+            ERROR_MESSAGE() AS MensajeError;
+    END CATCH;
+END;
+
+
+
+
+
+
+--QUERY DE EXECT
+
+-- Para actualizar precio de una comida
+EXEC sp_InsertarPrecios 'Comida', 1, 15000.00
+
+-- Para actualizar precio de una bebida
+EXEC sp_InsertarPrecios 'Bebida', 3, 5000.00
+
+
+--EVIDENCIAR CAMBIOS EN EL MODELO DE BASE DE DATOS RELACIONAL QUE CONSTRUIMOS  EN COMIDA 
+SELECT mc.nombreMenuComida, pc.precioPrecioComida, pc.fechaActualizacionPrecioComida
+FROM precioComida pc
+JOIN menuComida mc ON pc.idMenuComida = mc.idMenuComida
+WHERE mc.idMenuComida = 1  -- El mismo ID que usaste en el procedimiento
+ORDER BY pc.fechaActualizacionPrecioComida DESC;  -- Muestra el más reciente primero
+
+--ESTE POR EL AMBITO DE BEBIDA
+
+SELECT mb.nombreMenuBebida, pb.precioPrecioBebida, pb.fechaActualizacionPrecioBebida
+FROM precioBebida pb
+JOIN menuBebida mb ON pb.idMenuBebida = mb.idMenuBebida
+WHERE mb.idMenuBebida = 3  -- El mismo ID que usaste en el procedimiento
+ORDER BY pb.fechaActualizacionPrecioBebida DESC;  -- Muestra el más reciente primero
