@@ -48,4 +48,4 @@ PRINT 'Sin resultados';
 PRINT 'Cantidad de pedidos: ' + CAST(@cantidadSinResultados AS VARCHAR);
 PRINT 'Suma total cobrada: ' + CAST(@sumaTotalSinResultados AS VARCHAR);
 -- Nota: El cliente existe pero no tiene pedidos en el rango de fechas especificado
--- Nota: Se sugiere reestructurar el SP para manejar este caso
+-- Nota: Se sugiere reestructurar el SP para manejar este caso.
