@@ -344,7 +344,8 @@ INSERT INTO [dbo].[combinacionesDias]
             ('Lunes, Martes, Jueves, Viernes, Sábado, Domingo'),
             ('Lunes, Miércoles, Jueves, Viernes, Sábado, Domingo'),
             ('Martes, Miércoles, Jueves, Viernes, Sábado, Domingo'),
-            ('Lunes, Martes, Miércoles, Jueves, Viernes, Sábado, Domingo');    
+            ('Lunes, Martes, Miércoles, Jueves, Viernes, Sábado, Domingo'),
+            ('No disponible');    
 GO
 
 USE [lunchUniminuto]
