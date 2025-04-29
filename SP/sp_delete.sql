@@ -1,4 +1,10 @@
- CREATE OR ALTER PROCEDURE sp_EliminarElementoMenu
+IF OBJECT_ID('sp_EliminarElementoMenu') IS NOT NULL
+BEGIN
+    DROP PROCEDURE sp_EliminarElementoMenu
+END
+GO
+
+CREATE OR ALTER PROCEDURE sp_EliminarElementoMenu
     @TipoMenu VARCHAR(10),   -- 'Comida' o 'Bebida'
     @IdMenu INT,             -- ID del elemento a eliminar
     @EliminarPermanente BIT = 0  -- 0: Marca como no disponible, 1: Elimina definitivamente
@@ -46,7 +52,7 @@ BEGIN
                 FROM registroMenu rm
                 JOIN ordenServicio os ON rm.idOrdenServicio = os.idOrdenServicio
                 WHERE rm.idMenuComida = @IdMenu
-                AND os.idEstadoServicio IN (1, 2) -- Suponiendo 1=Pendiente, 2=En proceso
+                AND os.idEstadoServicio IN (1, 2, 3)
             )
             BEGIN
                 SET @ExisteEnOrden = 1;
@@ -59,7 +65,7 @@ BEGIN
                 FROM registroMenu rm
                 JOIN ordenServicio os ON rm.idOrdenServicio = os.idOrdenServicio
                 WHERE rm.idMenuBebida = @IdMenu
-                AND os.idEstadoServicio IN (1, 2) -- Suponiendo 1=Pendiente, 2=En proceso
+                AND os.idEstadoServicio IN (1, 2, 3)
             )
             BEGIN
                 SET @ExisteEnOrden = 1;
@@ -185,12 +191,10 @@ BEGIN
             ERROR_STATE() AS ErrorEstado,
             ERROR_PROCEDURE() AS ErrorProcedimiento,
             ERROR_LINE() AS ErrorLinea,
-            ERROR_MESSAGE() AS MensajeError;
+            ERROR_MESSAGE() AS MensajeError,;
     END CATCH;
 END;
-
-
-
+GO
 
 -- Para ver si un elemento de comida fue eliminado o marcado como no disponible
 SELECT * FROM menuComida WHERE idMenuComida = 1;
