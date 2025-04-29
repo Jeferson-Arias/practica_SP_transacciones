@@ -1,6 +1,9 @@
 USE master;
 GO
 
+DROP DATABASE IF EXISTS lunchUniminuto;
+GO
+
 CREATE DATABASE lunchUniminuto;
 GO
 
