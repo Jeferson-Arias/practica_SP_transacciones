@@ -1,6 +1,3 @@
-USE lunchUniminuto;
-GO
-
 -- Eliminamos la versión anterior si existe
 IF OBJECT_ID('sp_HistorialPedidosCliente', 'P') IS NOT NULL
     DROP PROCEDURE sp_HistorialPedidosCliente;
