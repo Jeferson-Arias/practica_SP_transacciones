@@ -1,0 +1,71 @@
+CREATE FUNCTION dbo.fn_CalcularMontoDescuento (
+    @idRolUniversitario INT,
+    @subtotalOrden DECIMAL(18,2),
+    @fechaOrden DATE
+)
+RETURNS DECIMAL(18,2)
+AS
+BEGIN
+    DECLARE @montoDescuento DECIMAL(18,2) = 0.00;
+    DECLARE @porcentaje DECIMAL(5,2);
+
+    SELECT TOP 1 @porcentaje = porcentajeDescuentoRol
+    FROM dbo.descuentoRol
+    WHERE idRolUniversitario = @idRolUniversitario
+      AND @fechaOrden >= fechaInicioDescuentoRol
+      AND @fechaOrden <= fechaFinDescuentoRol;
+
+    IF @porcentaje IS NOT NULL
+    BEGIN
+        SET @montoDescuento = @subtotalOrden * @porcentaje;
+    END
+
+    RETURN @montoDescuento;
+END;
+GO
+
+SELECT 25000.00 AS MontoBruto, dbo.fn_CalcularMontoDescuento(7, 25000.00, '2025-05-16') AS MontoDescuentoAplicable, (25000-dbo.fn_CalcularMontoDescuento(7, 25000.00, '2025-05-16')) AS montoACobrar;
+SELECT 25000.00 AS MontoBruto, dbo.fn_CalcularMontoDescuento(6, 25000.00, '2025-05-16') AS MontoDescuentoAplicable, (25000-dbo.fn_CalcularMontoDescuento(6, 25000.00, '2025-05-16')) AS montoACobrar;
+SELECT 25000.00 AS MontoBruto, dbo.fn_CalcularMontoDescuento(8, 25000.00, '2025-05-16') AS MontoDescuentoAplicable, (25000-dbo.fn_CalcularMontoDescuento(8, 25000.00, '2025-05-16')) AS montoACobrar;
+SELECT 25000.00 AS MontoBruto, dbo.fn_CalcularMontoDescuento(10, 25000.00, '2025-05-16') AS MontoDescuentoAplicable, (25000-dbo.fn_CalcularMontoDescuento(10, 25000.00, '2025-05-16')) AS montoACobrar;
+
+
+SELECT * from descuentoRol
+
+
+-------------------
+
+-- Escenario, mostrar las bebidas con su respectivo precio, respuesta para mostrar en FrontEnd
+
+CREATE FUNCTION mostrarMenuComida(
+	@categoria int,
+	@restaurante int
+) RETURNS @informacion table (id int, nombreBebida varchar(100), nombreRestaurante varchar(100), ultimaFecha date, precio decimal(18,2))
+AS
+
+begin
+	insert into @informacion(id, nombreBebida, nombreRestaurante, ultimaFecha, precio) 
+		SELECT a.idMenuBebida, a.nombreMenuBebida, c.nombreRestaurante,b.fechaActualizacionPrecioBebida, b.precioPrecioBebida
+		FROM menuBebida a
+		INNER JOIN precioBebida b ON b.idMenuBebida = a.idMenuBebida
+		inner join restaurante c ON c.idRestaurante = a.idRestaurante
+		WHERE a.idCategoriaComida = @categoria AND c.idRestaurante = @restaurante
+		ORDER BY b.fechaActualizacionPrecioBebida DESC;
+
+		return;
+end
+
+
+SELECT * FROm precioBebida Where idMenuBebida = 1;
+
+SELECT * FROM dbo.mostrarMenuComida(2,3)
+
+
+1                 Desayuno                                                                                             Primera comida del día, se toma en la mañana.
+2                 Almuerzo                                                                                             Comida principal del día, normalmente entre 12:00 p.m. y 2:00 p.m.
+3                 Cena                                                                                                 Última comida del día, usualmente ligera y tomada en la noche, entre 6:00 p.m. y 9:00 p.m.
+4                 Media mañana                                                                                         Refrigerio entre el desayuno y el almuerzo.
+5                 Media tarde                                                                                          Refrigerio entre el almuerzo y la cena, tomado a media tarde.
+6                 Refrigerio nocturno                                                                                  Refrigerio antes de dormir. Algo muy ligero, como una bebida caliente o panecillos.
+
+
