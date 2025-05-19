@@ -69,3 +69,17 @@ SELECT * FROM dbo.mostrarMenuComida(2,3)
 6                 Refrigerio nocturno                                                                                  Refrigerio antes de dormir. Algo muy ligero, como una bebida caliente o panecillos.
 
 
+
+
+
+-- Estructura para ejecutar la función escalar
+DECLARE @rolUniversitario int = 1; -- ID de Estudiante
+DECLARE @subTotalOrden decimal(18,2) = 100000.00;
+DECLARE @fechaOrden date = '2025-05-16';
+
+SELECT 
+	  @subTotalOrden AS MontoBruto
+	, dbo.fn_CalcularMontoDescuento(@rolUniversitario, @subTotalOrden, @fechaOrden) AS MontoDescuentoAplicable
+	, (@subTotalOrden-dbo.fn_CalcularMontoDescuento(@rolUniversitario, @subTotalOrden, @fechaOrden)) AS montoACobrar;
+
+
